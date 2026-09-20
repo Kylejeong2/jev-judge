@@ -125,8 +125,8 @@ export default function BatchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Batch rulings</h1>
-        <p className="mt-1 text-sm text-zinc-600">
+        <h1 className="font-serif text-3xl text-ink">The docket</h1>
+        <p className="mt-1 text-sm text-ink-soft">
           Paste or upload cases as JSONL (one JSON object per line) or a JSON array. Each object uses the same fields as
           the single-case form (<code className="font-mono text-xs">title</code> and{" "}
           <code className="font-mono text-xs">facts</code> required; include{" "}
@@ -140,31 +140,31 @@ export default function BatchPage() {
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
           placeholder={'{"id":"1","title":"Smith v. Jones","facts":"...","actualOutcome":"Judgment for defendant"}\n{"id":"2",...}'}
-          className="w-full rounded border border-zinc-300 bg-white px-3 py-2 font-mono text-xs focus:border-zinc-500 focus:outline-none"
+          className="w-full rounded border border-oak-300 px-3 py-2 font-mono text-xs focus:border-oak-600 focus:outline-none"
         />
         <div className="flex flex-col gap-3">
           <label className="text-sm">
-            <span className="block text-zinc-700">Upload file</span>
+            <span className="block text-ink">Upload file</span>
             <input type="file" accept=".json,.jsonl,.ndjson,.txt" onChange={onFile} className="mt-1 text-xs" />
           </label>
           <label className="text-sm">
-            <span className="block text-zinc-700">Concurrency</span>
+            <span className="block text-ink">Concurrency</span>
             <input
               type="number"
               min={1}
               max={32}
               value={concurrency}
               onChange={(e) => setConcurrency(Number(e.target.value))}
-              className="mt-1 w-24 rounded border border-zinc-300 px-2 py-1 text-sm"
+              className="mt-1 w-24 rounded border border-oak-300 px-2 py-1 text-sm"
             />
           </label>
-          <div className="text-xs text-zinc-500">
-            {parsed.error ? <span className="text-red-600">Parse error: {parsed.error}</span> : `${parsed.cases.length} case(s) parsed`}
+          <div className="text-xs text-ink-soft">
+            {parsed.error ? <span className="text-verdict-red">Parse error: {parsed.error}</span> : `${parsed.cases.length} case(s) parsed`}
           </div>
           {running ? (
             <button
               onClick={() => abortRef.current?.abort()}
-              className="rounded border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-100"
+              className="rounded border border-oak-300 px-4 py-2 text-sm hover:bg-wall-dark"
             >
               Stop
             </button>
@@ -172,7 +172,7 @@ export default function BatchPage() {
             <button
               onClick={run}
               disabled={!parsed.cases.length || !!parsed.error}
-              className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+              className="rounded brass px-5 py-2 font-serif text-sm uppercase tracking-[0.15em] disabled:opacity-50"
             >
               Run {parsed.cases.length || ""} case(s)
             </button>
@@ -180,7 +180,7 @@ export default function BatchPage() {
         </div>
       </div>
 
-      {error && <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+      {error && <div className="rounded border border-verdict-red/30 bg-verdict-red/10 p-4 text-sm text-verdict-red">{error}</div>}
 
       {rows.length > 0 && (
         <>
@@ -201,7 +201,7 @@ export default function BatchPage() {
           <div className="flex gap-2">
             <button
               onClick={() => download("jev-results.csv", toCsv(rows), "text/csv")}
-              className="rounded border border-zinc-300 px-3 py-1.5 text-xs hover:bg-zinc-100"
+              className="rounded border border-oak-300 px-3 py-1.5 text-xs hover:bg-wall-dark"
             >
               Download CSV
             </button>
@@ -213,16 +213,16 @@ export default function BatchPage() {
                   "application/x-ndjson",
                 )
               }
-              className="rounded border border-zinc-300 px-3 py-1.5 text-xs hover:bg-zinc-100"
+              className="rounded border border-oak-300 px-3 py-1.5 text-xs hover:bg-wall-dark"
             >
               Download JSONL
             </button>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-            <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+            <div className="paper overflow-x-auto rounded-md">
               <table className="w-full text-sm">
-                <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
+                <thead className="bg-wall-dark text-left text-xs uppercase tracking-wide text-ink-soft">
                   <tr>
                     <th className="px-3 py-2">#</th>
                     <th className="px-3 py-2">Case</th>
@@ -236,19 +236,19 @@ export default function BatchPage() {
                     <tr
                       key={r.index}
                       onClick={() => r.status === "done" && setSelected(r.index)}
-                      className={`border-t border-zinc-100 ${r.status === "done" ? "cursor-pointer hover:bg-zinc-50" : ""} ${selected === r.index ? "bg-zinc-100" : ""}`}
+                      className={`border-t border-wall-dark ${r.status === "done" ? "cursor-pointer hover:bg-wall" : ""} ${selected === r.index ? "bg-wall-dark" : ""}`}
                     >
-                      <td className="px-3 py-2 font-mono text-xs text-zinc-500">{r.index + 1}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-ink-soft">{r.index + 1}</td>
                       <td className="px-3 py-2">{r.title}</td>
                       <td className="px-3 py-2">
-                        {r.status === "pending" && <span className="text-zinc-400">…</span>}
-                        {r.status === "error" && <span className="text-red-600">{r.error}</span>}
+                        {r.status === "pending" && <span className="text-ink-soft/50">…</span>}
+                        {r.status === "error" && <span className="text-verdict-red">{r.error}</span>}
                         {r.status === "done" && r.result.ruling.ruling}
                       </td>
                       <td className="px-3 py-2">{r.status === "done" && <ConfidenceBar value={r.result.ruling.confidence} />}</td>
                       <td className="px-3 py-2">
                         {r.status === "done" && r.result.matchesActual !== undefined && (
-                          <span className={r.result.matchesActual ? "text-green-700" : "text-red-700"}>
+                          <span className={r.result.matchesActual ? "text-verdict-green" : "text-verdict-red"}>
                             {r.result.matchesActual ? "yes" : "no"}
                           </span>
                         )}
@@ -262,7 +262,7 @@ export default function BatchPage() {
               {selectedRow?.status === "done" ? (
                 <RulingCard result={selectedRow.result} />
               ) : (
-                <p className="text-sm text-zinc-500">Click a completed row to read Jev&apos;s full opinion.</p>
+                <p className="text-sm text-ink-soft">Click a completed row to read Jev&apos;s full opinion.</p>
               )}
             </div>
           </div>
@@ -274,8 +274,8 @@ export default function BatchPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3">
-      <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
+    <div className="paper rounded-md p-3">
+      <div className="text-xs uppercase tracking-wide text-ink-soft">{label}</div>
       <div className="mt-1 text-sm font-semibold">{value}</div>
     </div>
   );

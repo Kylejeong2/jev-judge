@@ -1,26 +1,188 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* courtroom palette: oak, brass, cream wall, gray carpet */
+  --oak-900: #3f2412;
+  --oak-800: #5a3418;
+  --oak-700: #7a4a22;
+  --oak-600: #9a6230;
+  --oak-500: #b67a3f;
+  --oak-400: #cf9a5c;
+  --oak-300: #e3bd8a;
+  --brass: #b8923a;
+  --brass-light: #e2c072;
+  --wall: #f4efe6;
+  --wall-dark: #e7dfd1;
+  --carpet: #6f7680;
+  --carpet-dark: #545a63;
+  --ink: #1d1712;
+  --ink-soft: #5b5147;
+  --paper: #fffdf8;
+  --verdict-green: #2f6b3a;
+  --verdict-red: #9b2c2c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-oak-900: var(--oak-900);
+  --color-oak-800: var(--oak-800);
+  --color-oak-700: var(--oak-700);
+  --color-oak-600: var(--oak-600);
+  --color-oak-500: var(--oak-500);
+  --color-oak-400: var(--oak-400);
+  --color-oak-300: var(--oak-300);
+  --color-brass: var(--brass);
+  --color-brass-light: var(--brass-light);
+  --color-wall: var(--wall);
+  --color-wall-dark: var(--wall-dark);
+  --color-carpet: var(--carpet);
+  --color-carpet-dark: var(--carpet-dark);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-verdict-green: var(--verdict-green);
+  --color-verdict-red: var(--verdict-red);
+  --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--carpet-dark);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* cream wall up top, gray carpet below */
+  background:
+    linear-gradient(180deg, var(--wall) 0, var(--wall) 420px, var(--wall-dark) 520px, var(--carpet) 640px, var(--carpet-dark) 100%);
+  background-attachment: fixed;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* wood grain panel */
+.wood {
+  color: var(--oak-300);
+  background-color: var(--oak-700);
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 255, 255, 0.05) 0 2px,
+      transparent 2px 9px,
+      rgba(0, 0, 0, 0.07) 9px 11px,
+      transparent 11px 23px
+    ),
+    linear-gradient(180deg, var(--oak-600), var(--oak-700) 40%, var(--oak-800));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.wood-dark {
+  color: var(--oak-300);
+  background-color: var(--oak-900);
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 255, 255, 0.04) 0 2px,
+      transparent 2px 9px,
+      rgba(0, 0, 0, 0.1) 9px 11px,
+      transparent 11px 23px
+    ),
+    linear-gradient(180deg, var(--oak-800), var(--oak-900));
+}
+
+.wood-rail {
+  height: 10px;
+  background: linear-gradient(180deg, var(--oak-400), var(--oak-600) 60%, var(--oak-800));
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* brass seal / plaque */
+.brass {
+  color: var(--oak-900);
+  background: radial-gradient(circle at 30% 25%, #f3dc9c, var(--brass) 55%, #8a6a22);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.brass-text {
+  color: var(--brass);
+}
+
+/* paper documents (case record, rulings) */
+.paper {
+  background: var(--paper);
+  border: 1px solid #d9cfbd;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.paper-rule {
+  border-bottom: 1px solid #e6dccb;
+}
+
+input,
+textarea,
+select {
+  background: var(--paper);
+}
+
+/* gavel knock on ruling reveal */
+@keyframes gavel {
+  0% {
+    transform: translateY(-12px) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.gavel-in {
+  animation: gavel 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: rise 400ms ease-out both;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+.blink {
+  animation: blink 1s steps(1) infinite;
+}
+
+/* brass-tinted logo */
+.brass-mark {
+  filter: invert(0.6) sepia(1) saturate(4) hue-rotate(5deg) brightness(0.95);
+}
+.cream-mark {
+  filter: invert(0.93) sepia(0.3) saturate(1.2) brightness(1.05);
 }
