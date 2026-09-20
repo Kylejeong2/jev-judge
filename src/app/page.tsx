@@ -1,69 +1,125 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { RulingCard } from "@/components/RulingCard";
+import type { CaseInput, JudgeResult } from "@/lib/types";
+
+type Field = {
+  key: keyof CaseInput;
+  label: string;
+  rows?: number;
+  required?: boolean;
+  placeholder?: string;
+};
+
+const FIELDS: Field[] = [
+  { key: "title", label: "Case title", required: true, placeholder: "Smith v. Jones" },
+  { key: "jurisdiction", label: "Jurisdiction", placeholder: "California" },
+  { key: "court", label: "Court", placeholder: "Superior Court of Los Angeles County" },
+  { key: "caseType", label: "Case type", placeholder: "Civil — breach of contract" },
+  { key: "questionPresented", label: "Question presented", rows: 2 },
+  { key: "facts", label: "Facts", rows: 8, required: true },
+  { key: "proceduralHistory", label: "Procedural history", rows: 3 },
+  { key: "evidence", label: "Evidence", rows: 5 },
+  { key: "plaintiffArguments", label: "Plaintiff / prosecution arguments", rows: 4 },
+  { key: "defendantArguments", label: "Defendant / respondent arguments", rows: 4 },
+  { key: "applicableLaw", label: "Applicable law", rows: 4 },
+  { key: "precedents", label: "Precedents", rows: 4 },
+  { key: "additionalContext", label: "Additional context", rows: 3 },
+  { key: "actualOutcome", label: "Actual outcome (optional, for scoring)", rows: 2 },
+];
+
+const EMPTY: CaseInput = { title: "", facts: "" };
+
+export default function SingleCasePage() {
+  const [form, setForm] = useState<CaseInput>(EMPTY);
+  const [result, setResult] = useState<JudgeResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/judge", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      setResult(data as JudgeResult);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="grid gap-8 lg:grid-cols-2">
+      <form onSubmit={submit} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Case record</h1>
+          <button
+            type="button"
+            className="text-xs text-zinc-500 hover:text-zinc-800"
+            onClick={() => setForm(EMPTY)}
+          >
+            Clear
+          </button>
+        </div>
+        {FIELDS.map((f) => (
+          <label key={f.key} className="block">
+            <span className="mb-1 block text-sm font-medium text-zinc-700">
+              {f.label}
+              {f.required && <span className="text-red-500"> *</span>}
+            </span>
+            {f.rows ? (
+              <textarea
+                rows={f.rows}
+                required={f.required}
+                placeholder={f.placeholder}
+                value={(form[f.key] as string) ?? ""}
+                onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+              />
+            ) : (
+              <input
+                type="text"
+                required={f.required}
+                placeholder={f.placeholder}
+                value={(form[f.key] as string) ?? ""}
+                onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+              />
+            )}
+          </label>
+        ))}
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+        >
+          {loading ? "Jev is deliberating…" : "Ask Jev to rule"}
+        </button>
+      </form>
+
+      <div className="lg:sticky lg:top-8 lg:self-start">
+        <h1 className="mb-4 text-xl font-semibold">Ruling</h1>
+        {error && (
+          <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>
+        )}
+        {result && <RulingCard result={result} />}
+        {!result && !error && (
+          <p className="text-sm text-zinc-500">
+            Fill in the record and submit. Jev returns a disposition, a calibrated confidence, the opinion, and
+            the authorities relied upon.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   );
 }

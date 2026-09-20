@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jev as a Judge
 
-## Getting Started
+Give Jev the record of a case — facts, evidence, arguments, law, precedents — and get back a ruling with a calibrated confidence, the opinion, key factors, and the authorities relied on. Run one case in the UI, or thousands via the batch page / CLI and score them against real outcomes.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # set JEV_API_KEY (and JEV_PROVIDER / JEV_MODEL / JEV_BASE_URL as needed)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Any OpenAI-compatible endpoint works via `JEV_PROVIDER=openai` + `JEV_BASE_URL`, so a fine-tuned or self-hosted Jev can be dropped in without code changes.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **`/`** — single-case form. Fill in the record, submit, read the ruling.
+- **`/batch`** — paste/upload JSONL or a JSON array of cases, pick concurrency, watch results stream in. Shows accuracy vs `actualOutcome`, average confidence, prevailing-party breakdown; export CSV/JSONL.
+- **CLI** — for very large runs (resumable; skips ids already in the output file):
 
-## Learn More
+  ```bash
+  npm run batch -- --in data/sample-cases.jsonl --out results/run1.jsonl --concurrency 8
+  ```
 
-To learn more about Next.js, take a look at the following resources:
+### Case format
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```jsonc
+{
+  "id": "palsgraf",                 // optional; used for resume/dedupe
+  "title": "Palsgraf v. LIRR",      // required
+  "facts": "...",                   // required
+  "jurisdiction": "New York",
+  "court": "...", "caseType": "...", "questionPresented": "...",
+  "proceduralHistory": "...", "evidence": "...",
+  "plaintiffArguments": "...", "defendantArguments": "...",
+  "applicableLaw": "...", "precedents": "...", "additionalContext": "...",
+  "actualOutcome": "Reversed; judgment for defendant"   // optional; enables scoring
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Result format
 
-## Deploy on Vercel
+```jsonc
+{
+  "caseId": "...", "title": "...", "model": "anthropic/claude-sonnet-4-5", "latencyMs": 8123,
+  "ruling": {
+    "ruling": "Reversed; complaint dismissed.",
+    "prevailingParty": "defendant",          // plaintiff | defendant | mixed | other
+    "confidence": 0.82,                      // 0..1
+    "reasoning": "...", "keyFactors": ["..."], "controllingAuthority": ["..."],
+    "dissentingConsiderations": "...", "remedy": "N/A"
+  },
+  "actualOutcome": "...", "matchesActual": true   // present when actualOutcome was given
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`matchesActual` is decided by a second, tiny LLM call comparing the actual and predicted dispositions (wording differs across sources, so string matching is unreliable).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API
+
+- `POST /api/judge` — body: one case → `JudgeResult`
+- `POST /api/batch` — body: `{ cases: CaseInput[], concurrency?: number }` → NDJSON stream of `start` / `result` / `error` / `done` events
+
+## Layout
+
+- `src/lib/judge.ts` — system prompt, case → prompt builder, JSON parsing, concurrency helper
+- `src/lib/llm.ts` — provider-agnostic chat completion (Anthropic Messages / OpenAI-compatible)
+- `src/lib/types.ts` — `CaseInput`, `Ruling`, `JudgeResult`, `BatchEvent`
+- `scripts/batch.ts` — CLI batch runner
+- `data/sample-cases.jsonl` — five sample cases with known outcomes
