@@ -7,23 +7,29 @@
  *   { state, model, questions }
  */
 
-export type Criterion = string | Record<string, string | string[]>;
+/** Instructions and criteria may be plain strings or structured objects
+ *  (e.g. `{ question, party_convention }`, `{ what, not_for, examples }`). */
+export type Criterion = string | null | Record<string, string | string[]>;
+export type Instructions = string | Record<string, string | string[]>;
 
 export type ChoiceQuestion = {
   type: "choice";
-  instructions: string;
+  instructions: Instructions;
   criteria: Record<string, Criterion>;
 };
 
 export type ScoreQuestion = {
   type: "score";
-  instructions: string;
+  instructions: Instructions;
   criteria: Criterion[];
 };
 
+export type NoulCriteria = { true: string; false: string };
+
 export type NoulQuestion = {
   type: "noul";
-  instructions: string;
+  instructions: Instructions;
+  criteria?: NoulCriteria;
 };
 
 export type Question = ChoiceQuestion | ScoreQuestion | NoulQuestion;
@@ -43,10 +49,10 @@ export type ScoreAnswer = {
   probabilities: Record<string, number>;
 };
 
+/** Noul answers carry a single probability (the field is named `noul`). */
 export type NoulAnswer = {
   type: "noul";
-  probability: number;
-  confidence: number;
+  noul: number;
 };
 
 export type Answer = ChoiceAnswer | ScoreAnswer | NoulAnswer;
@@ -66,19 +72,19 @@ type AnswerFor<Q extends Question> = Q extends ChoiceQuestion
 export type JsonState = string | JsonState[] | { [key: string]: JsonState };
 
 export const choice = (
-  instructions: string,
+  instructions: Instructions,
   criteria: Record<string, Criterion>,
 ): ChoiceQuestion => ({ type: "choice", instructions, criteria });
 
 export const score = (
-  instructions: string,
+  instructions: Instructions,
   criteria: Criterion[],
 ): ScoreQuestion => ({ type: "score", instructions, criteria });
 
-export const noul = (instructions: string): NoulQuestion => ({
-  type: "noul",
-  instructions,
-});
+export const noul = (
+  instructions: Instructions,
+  criteria?: NoulCriteria,
+): NoulQuestion => ({ type: "noul", instructions, ...(criteria && { criteria }) });
 
 export function getConfig() {
   const apiKey = process.env.TYPESAFE_API_KEY;
@@ -93,7 +99,7 @@ export function getConfig() {
   };
 }
 
-const RETRYABLE = new Set([408, 429, 500, 502, 503, 504]);
+const RETRYABLE = new Set([408, 429, 500, 502, 503, 504, 529]);
 
 export async function systemOne<Q extends Record<string, Question>>(
   state: JsonState,

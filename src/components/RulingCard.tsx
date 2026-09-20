@@ -1,23 +1,23 @@
 import type { ChoiceResult, JudgeResult, ScoreResult } from "@/lib/types";
 
-const partyColor: Record<JudgeResult["ruling"]["prevailingParty"], string> = {
-  plaintiff: "bg-blue-100 text-blue-800",
-  defendant: "bg-amber-100 text-amber-800",
-  mixed: "bg-purple-100 text-purple-800",
-  other: "bg-zinc-100 text-zinc-800",
+export const partyColor: Record<JudgeResult["ruling"]["prevailingParty"], string> = {
+  plaintiff: "bg-blue-900/10 text-blue-900",
+  defendant: "bg-oak-700/15 text-oak-800",
+  mixed: "bg-purple-900/10 text-purple-900",
+  other: "bg-ink/10 text-ink",
 };
 
 const humanize = (s: string) => s.replace(/_/g, " ");
 
 export function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
-  const color = pct >= 75 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
+  const color = pct >= 75 ? "bg-verdict-green" : pct >= 50 ? "bg-brass" : "bg-verdict-red";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-2 w-32 overflow-hidden rounded bg-zinc-200">
+      <div className="h-2 w-32 overflow-hidden rounded-md bg-wall-dark">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="font-mono text-sm">{pct}%</span>
+      <span className="tabular-nums text-sm">{pct}%</span>
     </div>
   );
 }
@@ -28,13 +28,13 @@ function Distribution({ probabilities, highlight }: { probabilities: Record<stri
     <div className="space-y-1">
       {entries.map(([k, p]) => (
         <div key={k} className="flex items-center gap-2 text-xs">
-          <span className={`w-56 truncate ${k === highlight ? "font-semibold" : "text-zinc-600"}`} title={k}>
+          <span className={`w-56 truncate ${k === highlight ? "font-semibold text-ink" : "text-ink-soft"}`} title={k}>
             {humanize(k)}
           </span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded bg-zinc-100">
-            <div className={`h-full ${k === highlight ? "bg-zinc-800" : "bg-zinc-400"}`} style={{ width: `${Math.round(p * 100)}%` }} />
+          <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-wall-dark">
+            <div className={`h-full ${k === highlight ? "bg-oak-700" : "bg-oak-400"}`} style={{ width: `${Math.round(p * 100)}%` }} />
           </div>
-          <span className="w-10 text-right font-mono">{Math.round(p * 100)}%</span>
+          <span className="w-10 text-right tabular-nums">{Math.round(p * 100)}%</span>
         </div>
       ))}
     </div>
@@ -55,14 +55,14 @@ function ScoreRow({ id, s }: { id: string; s: ScoreResult }) {
     <div className="text-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{humanize(id)}</span>
-        <span className="font-mono text-xs">
+        <span className="tabular-nums text-xs">
           {s.score.toFixed(2)} / {s.max} · conf {Math.round(s.confidence * 100)}%
         </span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded bg-zinc-100">
-        <div className="h-full bg-indigo-500" style={{ width: `${(s.score / s.max) * 100}%` }} />
+      <div className="mt-1 h-1.5 overflow-hidden rounded-md bg-wall-dark">
+        <div className="h-full bg-brass" style={{ width: `${(s.score / s.max) * 100}%` }} />
       </div>
-      <p className="mt-0.5 text-xs text-zinc-600">{level}</p>
+      <p className="mt-0.5 text-xs text-ink-soft">{level}</p>
     </div>
   );
 }
@@ -71,17 +71,17 @@ export function RulingCard({ result }: { result: JudgeResult }) {
   const r = result.ruling;
   const findings = Object.entries(r.findings).sort((a, b) => b[1] - a[1]);
   return (
-    <div className="space-y-5 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+    <div className="paper space-y-5 rounded-md p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">{r.ruling}</h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <h2 className="font-serif text-lg text-ink">{r.ruling}</h2>
+          <p className="mt-1 text-xs text-ink-soft">
             {result.model} · {(result.latencyMs / 1000).toFixed(1)}s · {result.inputTokens} input tokens
-            {r.needsReview && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 font-medium text-red-800">needs review</span>}
+            {r.needsReview && <span className="ml-2 rounded-md bg-verdict-red/10 px-1.5 py-0.5 font-medium text-verdict-red">needs review</span>}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <span className={`rounded px-2 py-0.5 text-xs font-medium ${partyColor[r.prevailingParty]}`}>
+          <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${partyColor[r.prevailingParty]}`}>
             {r.prevailingParty}
           </span>
           <ConfidenceBar value={r.confidence} />
@@ -90,10 +90,10 @@ export function RulingCard({ result }: { result: JudgeResult }) {
 
       {result.actualOutcome && (
         <div
-          className={`rounded border p-3 text-sm ${
+          className={`rounded-md border p-3 text-sm ${
             result.matchesActual
-              ? "border-green-200 bg-green-50 text-green-900"
-              : "border-red-200 bg-red-50 text-red-900"
+              ? "border-verdict-green/30 bg-verdict-green/10 text-verdict-green"
+              : "border-verdict-red/30 bg-verdict-red/10 text-verdict-red"
           }`}
         >
           <span className="font-medium">
@@ -112,14 +112,14 @@ export function RulingCard({ result }: { result: JudgeResult }) {
         <div className="space-y-1">
           {findings.map(([id, p]) => (
             <div key={id} className="flex items-center gap-2 text-xs">
-              <span className="w-56 truncate text-zinc-700" title={id}>{humanize(id)}</span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded bg-zinc-100">
+              <span className="w-56 truncate text-ink-soft" title={id}>{humanize(id)}</span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-wall-dark">
                 <div
-                  className={`h-full ${p >= 0.5 ? "bg-emerald-500" : "bg-rose-400"}`}
+                  className={`h-full ${p >= 0.5 ? "bg-verdict-green" : "bg-verdict-red/70"}`}
                   style={{ width: `${Math.round(p * 100)}%` }}
                 />
               </div>
-              <span className="w-10 text-right font-mono">{Math.round(p * 100)}%</span>
+              <span className="w-10 text-right tabular-nums">{Math.round(p * 100)}%</span>
             </div>
           ))}
         </div>
@@ -149,7 +149,7 @@ export function RulingCard({ result }: { result: JudgeResult }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">{title}</h3>
+      <h3 className="paper-rule mb-2 pb-1 font-serif text-sm font-medium text-ink">{title}</h3>
       {children}
     </div>
   );

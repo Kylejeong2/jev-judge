@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "batch": "tsx scripts/batch.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gallery": "tsx scripts/build-gallery.ts"
   },
   "dependencies": {
     "next": "16.3.5",

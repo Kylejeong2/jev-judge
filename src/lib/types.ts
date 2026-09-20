@@ -13,11 +13,18 @@ export type CaseInput = {
   applicableLaw?: string;
   precedents?: string;
   additionalContext?: string;
-  /** Ground-truth outcome, if known (used for batch scoring). */
+  /** Ground-truth outcome as free text, if known (used for batch scoring). */
   actualOutcome?: string;
+  /**
+   * Ground-truth prevailing party, if known. When set, scoring is an exact
+   * comparison in code (no second Jev call) and `matchProbability` is the
+   * probability Jev assigned to this party.
+   */
+  actualPrevailingParty?: Party;
 };
 
 export type Party = "plaintiff" | "defendant" | "mixed" | "other";
+export const PARTIES: readonly Party[] = ["plaintiff", "defendant", "mixed", "other"];
 
 export type ChoiceResult = {
   choice: string;
@@ -58,7 +65,11 @@ export type JudgeResult = {
   latencyMs: number;
   inputTokens: number;
   actualOutcome?: string;
-  /** Jev's probability that the predicted disposition matches `actualOutcome`. */
+  actualPrevailingParty?: Party;
+  /**
+   * With `actualPrevailingParty`: the probability Jev gave the true party.
+   * Otherwise: Jev's probability that the disposition matches `actualOutcome`.
+   */
   matchProbability?: number;
   matchesActual?: boolean;
 };
