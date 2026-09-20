@@ -17,15 +17,37 @@ export type CaseInput = {
   actualOutcome?: string;
 };
 
-export type Ruling = {
-  ruling: string;
-  prevailingParty: "plaintiff" | "defendant" | "mixed" | "other";
+export type Party = "plaintiff" | "defendant" | "mixed" | "other";
+
+export type ChoiceResult = {
+  choice: string;
+  probabilities: Record<string, number>;
   confidence: number;
-  reasoning: string;
+};
+
+export type ScoreResult = {
+  score: number;
+  max: number;
+  legend: string[];
+  probabilities: Record<string, number>;
+  confidence: number;
+};
+
+export type Ruling = {
+  /** Composed disposition sentence, built in code from the answers below. */
+  ruling: string;
+  prevailingParty: Party;
+  /** Confidence of the prevailing-party Choice (0..1). */
+  confidence: number;
+  needsReview: boolean;
+  prevailingPartyAnswer: ChoiceResult;
+  appellateDisposition: ChoiceResult;
+  remedy: ChoiceResult;
+  /** Noul answers: probability (0..1) that each proposition is true on the record. */
+  findings: Record<string, number>;
+  scores: Record<string, ScoreResult>;
+  /** Human-readable summary of the strongest signals, derived from findings/scores. */
   keyFactors: string[];
-  controllingAuthority: string[];
-  dissentingConsiderations: string;
-  remedy?: string;
 };
 
 export type JudgeResult = {
@@ -34,8 +56,10 @@ export type JudgeResult = {
   ruling: Ruling;
   model: string;
   latencyMs: number;
+  inputTokens: number;
   actualOutcome?: string;
-  /** Model's own judgment of whether its ruling matches `actualOutcome`. */
+  /** Jev's probability that the predicted disposition matches `actualOutcome`. */
+  matchProbability?: number;
   matchesActual?: boolean;
 };
 
