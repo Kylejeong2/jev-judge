@@ -34,6 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/batch" className="text-sm text-zinc-600 hover:text-zinc-900">
               Batch
             </Link>
+            <Link href="/gallery" className="text-sm text-zinc-600 hover:text-zinc-900">
+              Gallery
+            </Link>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
