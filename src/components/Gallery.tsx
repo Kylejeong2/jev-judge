@@ -300,36 +300,12 @@ function Verdicts({ entry }: { entry: GalleryEntry }) {
           <p className="mt-2 text-sm text-ink">{r.ruling.ruling}</p>
         </div>
       </div>
-      <table className="mt-4 w-full text-left text-xs">
-        <thead>
-          <tr className="text-ink-soft">
-            <th className="pr-3 font-medium">Point</th>
-            <th className="pr-3 font-medium">Court</th>
-            <th className="pr-3 font-medium">Jev</th>
-            <th className="font-medium">Comparison</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-t border-oak-900/10">
-            <td className="py-1.5 pr-3 font-medium text-ink">Prevailing party</td>
-            <td className={`py-1.5 pr-3 text-ink ${sameParty ? "" : "font-medium"}`}>{courtParty}</td>
-            <td className={`py-1.5 pr-3 text-ink ${sameParty ? "" : "font-medium"}`}>{jevParty}</td>
-            <td className={sameParty ? "text-verdict-green" : "text-verdict-red"}>
-              {sameParty ? "Same" : "Different"}
-            </td>
-          </tr>
-          <tr className="border-t border-oak-900/10">
-            <td className="py-1.5 pr-3 font-medium text-ink">Outcome</td>
-            <td className="py-1.5 pr-3 text-ink">{agree ? "Agrees" : "Differs"}</td>
-            <td className="py-1.5 pr-3 tabular-nums text-ink">
-              {r.matchProbability !== undefined ? `p=${r.matchProbability.toFixed(2)}` : "—"}
-            </td>
-            <td className={agree ? "text-verdict-green" : "text-verdict-red"}>
-              {agree ? "Same" : "Different"}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <p className="mt-4 text-sm text-ink-soft">
+        {sameParty
+          ? `Both name the ${jevParty} as the prevailing party.`
+          : `The court ruled for the ${courtParty}; Jev ruled for the ${jevParty}.`}
+        {r.matchProbability !== undefined && ` Jev put the odds of matching the real outcome at ${Math.round(r.matchProbability * 100)}%.`}
+      </p>
     </div>
   );
 }
