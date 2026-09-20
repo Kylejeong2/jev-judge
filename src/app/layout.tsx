@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import gallery from "@/data/gallery.json";
 import type { GalleryEntry } from "@/lib/gallery";
@@ -12,11 +12,6 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "Jev as a Judge",
   description: "Feed Jev a case record and get a ruling with confidence.",
@@ -24,29 +19,28 @@ export const metadata: Metadata = {
 
 const NAV = [
   ["/", "Courtroom"],
-  ["/batch", "Docket"],
   ["/gallery", "Gallery"],
 ] as const;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   const entries = gallery as GalleryEntry[];
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <header className="wood sticky top-0 z-40 rounded-none shadow-md">
+        <header className="wood sticky top-0 z-40 shadow-md">
           <nav className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-2.5">
             <Link href="/" className="flex items-center gap-2.5">
               <span className="brass flex h-7 w-7 items-center justify-center rounded-full">
                 <Image src="/typesafe-mark.png" alt="" width={16} height={16} className="opacity-90" />
               </span>
-              <span className="font-serif text-lg tracking-wide text-brass-light">Jev as a Judge</span>
+              <span className="font-serif text-lg text-brass-light">Jev as a Judge</span>
             </Link>
             <div className="hidden items-center gap-5 sm:flex">
               {NAV.map(([href, label]) => (
                 <Link
                   key={href}
                   href={href}
-                  className="text-sm uppercase tracking-widest text-oak-300/90 hover:text-brass-light"
+                  className="text-sm text-oak-300/90 hover:text-brass-light"
                 >
                   {label}
                 </Link>

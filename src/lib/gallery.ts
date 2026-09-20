@@ -6,6 +6,7 @@ export type GalleryCase = CaseInput & {
   id: string;
   year: number;
   topic: string;
+  tldr: string;
 };
 
 export type GalleryEntry = {
@@ -23,6 +24,7 @@ export function searchText(e: GalleryEntry): string {
     c.jurisdiction,
     c.caseType,
     String(c.year),
+    c.tldr,
     c.questionPresented,
     c.facts,
     c.actualOutcome,
@@ -52,6 +54,7 @@ export function galleryDoc(e: GalleryEntry): SearchDoc {
       { text: c.jurisdiction ?? "", weight: 2 },
       { text: c.caseType ?? "", weight: 2 },
       { text: c.questionPresented ?? "", weight: 2 },
+      { text: c.tldr, weight: 2 },
       {
         text: [r.ruling, r.prevailingParty, ...r.keyFactors].join(" "),
         weight: 1.5,

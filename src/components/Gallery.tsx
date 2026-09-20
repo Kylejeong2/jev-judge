@@ -137,7 +137,7 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
                     <Highlighted text={e.case.title} query={query} />
                   </h2>
                   <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
                       e.result.matchesActual
                         ? "bg-verdict-green/10 text-verdict-green"
                         : "bg-verdict-red/10 text-verdict-red"
@@ -150,16 +150,20 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
                   <Highlighted text={`${e.case.court} · ${e.case.year} · ${e.case.topic}`} query={query} />
                 </p>
                 <p className="line-clamp-3 text-sm text-ink">
-                  <Highlighted text={e.case.questionPresented ?? ""} query={query} />
+                  <Highlighted text={e.case.tldr} query={query} />
                 </p>
                 <div className="mt-auto flex items-center justify-between pt-1 text-xs">
-                  <span>
-                    Jev:{" "}
-                    <span className={`rounded px-1.5 py-0.5 font-medium ${partyColor[e.result.ruling.prevailingParty]}`}>
+                  <span className="flex flex-wrap items-center gap-1">
+                    Court:{" "}
+                    <span className={`rounded-md px-1.5 py-0.5 font-medium ${partyColor[e.case.actualPrevailingParty ?? "other"]}`}>
+                      {e.case.actualPrevailingParty ?? "other"}
+                    </span>
+                    {" · "}Jev:{" "}
+                    <span className={`rounded-md px-1.5 py-0.5 font-medium ${partyColor[e.result.ruling.prevailingParty]}`}>
                       {e.result.ruling.prevailingParty}
                     </span>
                   </span>
-                  <span className="font-mono text-ink-soft">{Math.round(e.result.ruling.confidence * 100)}%</span>
+                  <span className="tabular-nums text-ink-soft">{Math.round(e.result.ruling.confidence * 100)}%</span>
                 </div>
               </button>
             </li>
@@ -176,7 +180,7 @@ function Highlighted({ text, query }: { text: string; query: string }) {
     <>
       {highlight(text, query).map((seg, i) =>
         seg.hit ? (
-          <mark key={i} className="rounded-sm bg-brass-light/60 text-inherit">
+          <mark key={i} className="rounded-md bg-brass-light/60 text-inherit">
             {seg.text}
           </mark>
         ) : (
@@ -230,20 +234,26 @@ function Detail({ entry, onBack }: { entry: GalleryEntry; onBack: () => void }) 
         </div>
       </div>
 
+      <div className="paper rise-in rounded-md p-5">
+        <p className="font-serif text-lg leading-relaxed text-ink">{c.tldr}</p>
+      </div>
+
+      <Verdicts entry={entry} />
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div>
-          <h2 className="mb-2 font-serif text-xs uppercase tracking-[0.3em] text-ink-soft">From the bench</h2>
+          <h2 className="mb-2 font-serif text-base text-ink">Jev&rsquo;s full opinion</h2>
           <RulingCard result={entry.result} />
         </div>
         <div>
-          <h2 className="mb-2 font-serif text-xs uppercase tracking-[0.3em] text-ink-soft">The record before the court</h2>
+          <h2 className="mb-2 font-serif text-base text-ink">The record before the court</h2>
           <div className="paper space-y-4 rounded-md p-5 text-sm">
             {RECORD_FIELDS.map(({ key, label }) => {
               const v = c[key];
               if (typeof v !== "string" || !v) return null;
               return (
                 <div key={key}>
-                  <h3 className="paper-rule pb-1 font-serif text-xs uppercase tracking-[0.25em] text-oak-700">{label}</h3>
+                  <h3 className="paper-rule pb-1 font-serif text-sm font-medium text-ink">{label}</h3>
                   <p className="mt-1 whitespace-pre-line text-ink">{v}</p>
                 </div>
               );
@@ -251,6 +261,75 @@ function Detail({ entry, onBack }: { entry: GalleryEntry; onBack: () => void }) 
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Verdicts({ entry }: { entry: GalleryEntry }) {
+  const c = entry.case;
+  const r = entry.result;
+  const courtParty = c.actualPrevailingParty ?? "other";
+  const jevParty = r.ruling.prevailingParty;
+  const sameParty = courtParty === jevParty;
+  const agree = r.matchesActual;
+  return (
+    <div className="paper rounded-md p-5">
+      <p className={`font-serif text-lg ${agree ? "text-verdict-green" : "text-verdict-red"}`}>
+        {agree ? "Jev agrees with the court" : "Jev disagrees with the court"}
+        <span className="ml-2 text-sm font-normal tabular-nums text-ink-soft">
+          Jev&rsquo;s confidence in its winner: {Math.round(r.ruling.confidence * 100)}%
+        </span>
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-md border border-oak-900/15 p-4">
+          <h3 className="font-serif text-sm font-medium text-ink">What the court ruled</h3>
+          <p className="mt-2">
+            <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${partyColor[courtParty]}`}>
+              {courtParty}
+            </span>
+          </p>
+          <p className="mt-2 text-sm text-ink">{c.actualOutcome}</p>
+        </div>
+        <div className="rounded-md border border-oak-900/15 p-4">
+          <h3 className="font-serif text-sm font-medium text-ink">What Jev ruled</h3>
+          <p className="mt-2">
+            <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${partyColor[jevParty]}`}>
+              {jevParty}
+            </span>
+          </p>
+          <p className="mt-2 text-sm text-ink">{r.ruling.ruling}</p>
+        </div>
+      </div>
+      <table className="mt-4 w-full text-left text-xs">
+        <thead>
+          <tr className="text-ink-soft">
+            <th className="pr-3 font-medium">Point</th>
+            <th className="pr-3 font-medium">Court</th>
+            <th className="pr-3 font-medium">Jev</th>
+            <th className="font-medium">Comparison</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-t border-oak-900/10">
+            <td className="py-1.5 pr-3 font-medium text-ink">Prevailing party</td>
+            <td className={`py-1.5 pr-3 text-ink ${sameParty ? "" : "font-medium"}`}>{courtParty}</td>
+            <td className={`py-1.5 pr-3 text-ink ${sameParty ? "" : "font-medium"}`}>{jevParty}</td>
+            <td className={sameParty ? "text-verdict-green" : "text-verdict-red"}>
+              {sameParty ? "Same" : "Different"}
+            </td>
+          </tr>
+          <tr className="border-t border-oak-900/10">
+            <td className="py-1.5 pr-3 font-medium text-ink">Outcome</td>
+            <td className="py-1.5 pr-3 text-ink">{agree ? "Agrees" : "Differs"}</td>
+            <td className="py-1.5 pr-3 tabular-nums text-ink">
+              {r.matchProbability !== undefined ? `p=${r.matchProbability.toFixed(2)}` : "—"}
+            </td>
+            <td className={agree ? "text-verdict-green" : "text-verdict-red"}>
+              {agree ? "Same" : "Different"}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

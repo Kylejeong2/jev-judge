@@ -21,6 +21,14 @@ for (const l of lines(resultsPath)) {
   results.set(r.caseId, r);
 }
 
+const tldrs = new Map<string, string>();
+for (const c of JSON.parse(readFileSync("data/landmark-list.json", "utf8")) as {
+  id: string;
+  tldr: string;
+}[]) {
+  tldrs.set(c.id, c.tldr);
+}
+
 const entries: GalleryEntry[] = [];
 for (const l of lines(casesPath)) {
   const c = JSON.parse(l) as GalleryCase & CaseInput;
@@ -29,6 +37,9 @@ for (const l of lines(casesPath)) {
     console.warn(`no result for ${c.id}, skipping`);
     continue;
   }
+  const tldr = tldrs.get(c.id!);
+  if (!tldr) throw new Error(`no tldr for ${c.id} in landmark-list.json`);
+  c.tldr = tldr;
   entries.push({ case: c, result });
 }
 entries.sort((a, b) => a.case.year - b.case.year);

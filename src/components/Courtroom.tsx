@@ -118,7 +118,7 @@ export function Courtroom({ samples }: { samples: CaseInput[] }) {
             <Transcript lines={busy ? script.slice(0, lines) : script} done={!busy} />
             {phase === "ruled" && result && <BenchRuling result={result} />}
             {phase === "error" && error && (
-              <div className="paper rise-in mx-auto max-w-3xl rounded-md border-l-4 border-l-verdict-red p-5 text-sm text-verdict-red">
+              <div className="paper rise-in mx-auto max-w-3xl rounded-md border-verdict-red/30 bg-verdict-red/10 p-5 text-sm text-verdict-red">
                 <span className="font-serif font-semibold">The court could not reach Jev:</span> {error}
               </div>
             )}
@@ -143,7 +143,7 @@ export function Courtroom({ samples }: { samples: CaseInput[] }) {
             <label className="text-ink-soft">
               Load a landmark record{" "}
               <select
-                className="rounded border border-oak-300 px-2 py-1 text-xs text-ink"
+                className="rounded-md border border-oak-300 px-2 py-1 text-xs text-ink"
                 defaultValue=""
                 onChange={(e) => {
                   const s = samples.find((x) => x.id === e.target.value);
@@ -176,8 +176,8 @@ export function Courtroom({ samples }: { samples: CaseInput[] }) {
           </div>
         </div>
 
-        {/* caption / docket sheet */}
-        <Paper title="Docket">
+        {/* caption sheet */}
+        <Paper title="Caption">
           <div className="grid gap-3 sm:grid-cols-2">
             {CAPTION_FIELDS.map((f) => (
               <Input key={f.key} f={f} value={(form[f.key] as string) ?? ""} onChange={(v) => set(f.key, v)} />
@@ -215,7 +215,7 @@ export function Courtroom({ samples }: { samples: CaseInput[] }) {
           <button
             type="submit"
             disabled={busy}
-            className="brass rounded-md px-8 py-3 font-serif text-base uppercase tracking-[0.2em] disabled:opacity-60"
+            className="brass rounded-md px-8 py-3 font-serif text-base disabled:opacity-60"
           >
             {busy ? "Deliberating…" : "Ask the court to rule"}
           </button>
@@ -227,17 +227,17 @@ export function Courtroom({ samples }: { samples: CaseInput[] }) {
 
 function Transcript({ lines, done }: { lines: string[]; done: boolean }) {
   return (
-    <div className="paper mx-auto max-w-3xl rounded-md p-5 font-mono text-[13px] leading-relaxed text-ink-soft">
-      <p className="paper-rule mb-3 pb-2 font-serif text-xs uppercase tracking-[0.3em] text-oak-700">Transcript</p>
+    <div className="paper mx-auto max-w-3xl rounded-md p-5 text-[13px] leading-relaxed text-ink-soft">
+      <h3 className="paper-rule mb-3 pb-2 font-serif text-sm font-medium text-ink">Transcript</h3>
       {lines.map((l, i) => (
         <p key={i} className="rise-in">
-          <span className="mr-2 select-none text-oak-500">{String(i + 1).padStart(2, "0")}</span>
+          <span className="mr-2 select-none tabular-nums text-oak-500">{String(i + 1).padStart(2, "0")}</span>
           {l}
         </p>
       ))}
       {!done && (
         <p>
-          <span className="mr-2 select-none text-oak-500">{String(lines.length + 1).padStart(2, "0")}</span>
+          <span className="mr-2 select-none tabular-nums text-oak-500">{String(lines.length + 1).padStart(2, "0")}</span>
           <span className="blink">▌</span>
         </p>
       )}
@@ -250,12 +250,12 @@ function BenchRuling({ result }: { result: JudgeResult }) {
   return (
     <div className="gavel-in mx-auto max-w-3xl">
       <div className="wood rounded-md p-1">
-        <div className="paper rounded-sm p-6 text-center">
-          <p className="font-serif text-xs uppercase tracking-[0.35em] text-oak-700">The court rules</p>
+        <div className="paper rounded-md p-6 text-center">
+          <h2 className="font-serif text-sm font-medium text-ink-soft">The court rules</h2>
           <p className="mt-3 font-serif text-2xl leading-snug text-ink">{r.ruling}</p>
           <p className="mt-3 text-sm text-ink-soft">
             Judgment for the <span className="font-semibold text-ink">{r.prevailingParty}</span> · confidence{" "}
-            <span className="font-mono">{Math.round(r.confidence * 100)}%</span>
+            <span className="tabular-nums">{Math.round(r.confidence * 100)}%</span>
             {r.needsReview && <span className="ml-2 text-verdict-red">· flagged for review</span>}
           </p>
         </div>
@@ -267,7 +267,7 @@ function BenchRuling({ result }: { result: JudgeResult }) {
 function Paper({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="paper rounded-md p-5">
-      <p className="paper-rule mb-4 pb-2 font-serif text-xs uppercase tracking-[0.3em] text-oak-700">{title}</p>
+      <h3 className="paper-rule mb-4 pb-2 font-serif text-sm font-medium text-ink">{title}</h3>
       {children}
     </div>
   );
@@ -276,18 +276,18 @@ function Paper({ title, children }: { title: string; children: React.ReactNode }
 function Table({ side, children }: { side: string; children: React.ReactNode }) {
   return (
     <div className="wood rounded-md p-3">
-      <p className="mb-2 text-center font-serif text-xs uppercase tracking-[0.3em] text-brass-light">{side}</p>
-      <div className="paper rounded-sm p-3">{children}</div>
+      <h3 className="mb-2 text-center font-serif text-sm font-medium text-brass-light">{side}</h3>
+      <div className="paper rounded-md p-3">{children}</div>
     </div>
   );
 }
 
 function Input({ f, value, onChange }: { f: Field; value: string; onChange: (v: string) => void }) {
   const cls =
-    "w-full rounded border border-oak-300/70 px-3 py-2 text-sm text-ink placeholder:text-ink-soft/50 focus:border-oak-600 focus:outline-none";
+    "w-full rounded-md border border-oak-300/70 px-3 py-2 text-sm text-ink placeholder:text-ink-soft/50 focus:border-oak-600 focus:outline-none";
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-soft">
+      <span className="mb-1 block text-xs font-medium text-ink-soft">
         {f.label}
         {f.required && <span className="text-verdict-red"> *</span>}
       </span>

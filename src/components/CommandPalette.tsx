@@ -11,7 +11,6 @@ type NavCommand = { label: string; href: string };
 
 const NAV_COMMANDS: NavCommand[] = [
   { label: "Courtroom — judge a new case", href: "/" },
-  { label: "Docket — batch run", href: "/batch" },
   { label: "Browse gallery", href: "/gallery" },
 ];
 
@@ -127,14 +126,14 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
       role="presentation"
     >
       <div
-        className="paper mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-2xl overflow-hidden rounded-lg shadow-2xl"
+        className="paper mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-2xl overflow-hidden rounded-md shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
       >
-        <div className="wood-dark px-4 py-2 text-xs font-medium uppercase tracking-widest text-paper/80">
-          Jev — search landmark cases
+        <div className="wood-dark px-4 py-2 text-sm text-paper/80">
+          Search landmark cases
         </div>
         <div className="border-b border-oak-700/20 px-4 py-3">
           <input
@@ -169,7 +168,7 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
                         seg.hit ? (
                           <mark
                             key={j}
-                            className="rounded-sm bg-brass-light/60 text-inherit"
+                            className="rounded-md bg-brass-light/60 text-inherit"
                           >
                             {seg.text}
                           </mark>
@@ -183,12 +182,12 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${partyColor[e.result.ruling.prevailingParty]}`}
+                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${partyColor[e.result.ruling.prevailingParty]}`}
                   >
                     {e.result.ruling.prevailingParty}
                   </span>
                   <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
                       e.result.matchesActual
                         ? "bg-verdict-green/10 text-verdict-green"
                         : "bg-verdict-red/10 text-verdict-red"
@@ -201,7 +200,7 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
             );
           })}
           {navHits.length > 0 && (
-            <li className="px-4 pb-1 pt-2 text-[11px] font-medium uppercase tracking-widest text-ink-soft">
+            <li className="px-4 pb-1 pt-2 font-serif text-sm font-medium text-ink">
               Commands
             </li>
           )}
