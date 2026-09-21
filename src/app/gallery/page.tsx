@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import gallery from "@/data/gallery.json";
 import type { GalleryEntry } from "@/lib/gallery";
@@ -10,5 +11,9 @@ export const metadata: Metadata = {
 
 export default function GalleryPage() {
   const entries = gallery as GalleryEntry[];
-  return <Gallery entries={entries} />;
+  return (
+    <Suspense>
+      <Gallery entries={entries} />
+    </Suspense>
+  );
 }

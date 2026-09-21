@@ -51,8 +51,8 @@ export function Bench({
       {/* the bench itself */}
       <div className="wood relative mx-auto -mt-2 max-w-4xl rounded-md px-8 pb-4 pt-3">
         <div className="mx-auto flex max-w-md items-center justify-center gap-3 rounded-md bg-oak-900/60 px-4 py-2 shadow-inner">
-          <span className={`h-2 w-2 rounded-full ${busy ? "bg-brass-light blink" : "bg-verdict-green"}`} />
-          <span className="font-serif text-sm text-brass-light">{status}</span>
+          <span aria-hidden="true" className={`h-2 w-2 rounded-full ${busy ? "bg-brass-light blink" : "bg-verdict-green"}`} />
+          <span aria-live="polite" className="font-serif text-sm text-brass-light">{status}</span>
         </div>
         {caption && <p className="mt-2 text-center text-xs text-oak-300/80">{caption}</p>}
       </div>
