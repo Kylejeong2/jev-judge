@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { galleryDoc, type GalleryEntry } from "@/lib/gallery";
 import { highlight, rankSearch } from "@/lib/search";
 import { label } from "@/lib/labels";
@@ -39,7 +39,6 @@ function useHashId(): [string | null, (id: string | null) => void] {
 }
 
 export function Gallery({ entries }: { entries: GalleryEntry[] }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useHashId();
@@ -59,7 +58,7 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
     if (p !== "all") params.set("party", p);
     const qs = params.toString();
     const hash = window.location.hash;
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}${hash}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}${qs ? `?${qs}` : ""}${hash}`);
   }
 
   const select = (id: string | null) => {
@@ -494,7 +493,9 @@ function Verdicts({ entry }: { entry: GalleryEntry }) {
       <p className="mt-4 text-sm text-ink-soft">
         {sameParty
           ? `Both name the ${label(jevParty).toLowerCase()} as the prevailing party.`
-          : `The court ruled for the ${label(courtParty).toLowerCase()}; Jev ruled for the ${label(jevParty).toLowerCase()}.`}
+          : why
+            ? ""
+            : `The court ruled for the ${label(courtParty).toLowerCase()}; Jev ruled for the ${label(jevParty).toLowerCase()}.`}
         {r.matchProbability !== undefined &&
           ` Jev put the odds of matching the real outcome at ${Math.round(r.matchProbability * 100)}%.`}
       </p>
