@@ -1,4 +1,5 @@
 import type { ChoiceResult, JudgeResult, ScoreResult } from "@/lib/types";
+import { label } from "@/lib/labels";
 
 export const partyColor: Record<JudgeResult["ruling"]["prevailingParty"], string> = {
   plaintiff: "bg-blue-900/10 text-blue-900",
@@ -6,8 +7,6 @@ export const partyColor: Record<JudgeResult["ruling"]["prevailingParty"], string
   mixed: "bg-purple-900/10 text-purple-900",
   other: "bg-ink/10 text-ink",
 };
-
-const humanize = (s: string) => s.replace(/_/g, " ");
 
 export function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
@@ -28,8 +27,8 @@ function Distribution({ probabilities, highlight }: { probabilities: Record<stri
     <div className="space-y-1">
       {entries.map(([k, p]) => (
         <div key={k} className="flex items-center gap-2 text-xs">
-          <span className={`w-56 truncate ${k === highlight ? "font-semibold text-ink" : "text-ink-soft"}`} title={k}>
-            {humanize(k)}
+          <span className={`w-40 shrink-0 truncate sm:w-64 sm:whitespace-normal sm:overflow-visible ${k === highlight ? "font-semibold text-ink" : "text-ink-soft"}`} title={k}>
+            {label(k)}
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-wall-dark">
             <div className={`h-full ${k === highlight ? "bg-oak-700" : "bg-oak-400"}`} style={{ width: `${Math.round(p * 100)}%` }} />
@@ -43,7 +42,7 @@ function Distribution({ probabilities, highlight }: { probabilities: Record<stri
 
 function ChoiceBlock({ title, a }: { title: string; a: ChoiceResult }) {
   return (
-    <Section title={`${title} · confidence ${Math.round(a.confidence * 100)}%`}>
+    <Section title={`${title} · Jev's confidence ${Math.round(a.confidence * 100)}%`}>
       <Distribution probabilities={a.probabilities} highlight={a.choice} />
     </Section>
   );
@@ -54,9 +53,9 @@ function ScoreRow({ id, s }: { id: string; s: ScoreResult }) {
   return (
     <div className="text-sm">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{humanize(id)}</span>
+        <span className="font-medium">{label(id)}</span>
         <span className="tabular-nums text-xs">
-          {s.score.toFixed(2)} / {s.max} · conf {Math.round(s.confidence * 100)}%
+          {s.score.toFixed(2)} / {s.max} · Jev&rsquo;s confidence {Math.round(s.confidence * 100)}%
         </span>
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-md bg-wall-dark">
@@ -82,7 +81,7 @@ export function RulingCard({ result }: { result: JudgeResult }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${partyColor[r.prevailingParty]}`}>
-            {r.prevailingParty}
+            {label(r.prevailingParty)}
           </span>
           <ConfidenceBar value={r.confidence} />
         </div>
@@ -97,8 +96,8 @@ export function RulingCard({ result }: { result: JudgeResult }) {
           }`}
         >
           <span className="font-medium">
-            {result.matchesActual ? "Matches" : "Differs from"} actual outcome
-            {result.matchProbability !== undefined && ` (p=${result.matchProbability.toFixed(2)})`}:
+            {result.matchesActual ? "Matches" : "Differs from"} the actual outcome
+            {result.matchProbability !== undefined && ` · odds of matching ${Math.round(result.matchProbability * 100)}%`}:
           </span>{" "}
           {result.actualOutcome}
         </div>
@@ -112,7 +111,7 @@ export function RulingCard({ result }: { result: JudgeResult }) {
         <div className="space-y-1">
           {findings.map(([id, p]) => (
             <div key={id} className="flex items-center gap-2 text-xs">
-              <span className="w-56 truncate text-ink-soft" title={id}>{humanize(id)}</span>
+              <span className="w-40 shrink-0 truncate text-ink-soft sm:w-64 sm:whitespace-normal sm:overflow-visible" title={id}>{label(id)}</span>
               <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-wall-dark">
                 <div
                   className={`h-full ${p >= 0.5 ? "bg-verdict-green" : "bg-verdict-red/70"}`}

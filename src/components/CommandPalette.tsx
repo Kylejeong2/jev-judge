@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { GalleryEntry } from "@/lib/gallery";
 import { galleryDoc } from "@/lib/gallery";
 import { highlight, rankSearch } from "@/lib/search";
-import { partyColor } from "./RulingCard";
+import { label } from "@/lib/labels";
 
 type NavCommand = { label: string; href: string };
 
@@ -145,15 +145,19 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
             }}
             onKeyDown={onInputKeyDown}
             placeholder="Search cases, topics, courts…"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="cmdk-list"
+            aria-activedescendant={`cmdk-${selected}`}
             className="w-full bg-transparent font-serif text-lg text-ink outline-none placeholder:text-ink-soft/60"
           />
         </div>
-        <ul className="max-h-[50vh] overflow-y-auto py-1">
+        <ul role="listbox" id="cmdk-list" className="max-h-[50vh] overflow-y-auto py-1">
           {caseHits.map((e, i) => {
             const c = e.case;
             const active = i === selected;
             return (
-              <li key={c.id}>
+              <li key={c.id} role="option" aria-selected={active} id={`cmdk-${i}`}>
                 <button
                   type="button"
                   onMouseEnter={() => setSelected(i)}
@@ -182,25 +186,22 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${partyColor[e.result.ruling.prevailingParty]}`}
-                  >
-                    {e.result.ruling.prevailingParty}
-                  </span>
-                  <span
                     className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
                       e.result.matchesActual
                         ? "bg-verdict-green/10 text-verdict-green"
                         : "bg-verdict-red/10 text-verdict-red"
                     }`}
                   >
-                    {e.result.matchesActual ? "agrees" : "differs"}
+                    {e.result.matchesActual
+                      ? `agrees · ${label(e.result.ruling.prevailingParty)}`
+                      : `differs · court ${label(c.actualPrevailingParty ?? "other")}, Jev ${label(e.result.ruling.prevailingParty)}`}
                   </span>
                 </button>
               </li>
             );
           })}
           {navHits.length > 0 && (
-            <li className="px-4 pb-1 pt-2 font-serif text-sm font-medium text-ink">
+            <li role="presentation" className="px-4 pb-1 pt-2 font-serif text-sm font-medium text-ink">
               Commands
             </li>
           )}
@@ -208,7 +209,7 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
             const idx = caseHits.length + i;
             const active = idx === selected;
             return (
-              <li key={c.href}>
+              <li key={c.href} role="option" aria-selected={active} id={`cmdk-${idx}`}>
                 <button
                   type="button"
                   onMouseEnter={() => setSelected(idx)}
@@ -223,7 +224,7 @@ export function CommandPalette({ entries }: { entries: GalleryEntry[] }) {
             );
           })}
           {total === 0 && (
-            <li className="px-4 py-6 text-center text-sm text-ink-soft">
+            <li role="presentation" className="px-4 py-6 text-center text-sm text-ink-soft">
               No matching cases.
             </li>
           )}

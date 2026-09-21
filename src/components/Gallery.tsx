@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { galleryDoc, type GalleryEntry } from "@/lib/gallery";
 import { highlight, rankSearch } from "@/lib/search";
+import { label } from "@/lib/labels";
+import { whyTheyDiffer } from "@/lib/explain";
 import type { Party } from "@/lib/types";
-import { partyColor, RulingCard } from "./RulingCard";
+import { RulingCard } from "./RulingCard";
 import { Seal } from "./Bench";
 
 type Verdict = "all" | "match" | "differ";
@@ -36,14 +39,45 @@ function useHashId(): [string | null, (id: string | null) => void] {
 }
 
 export function Gallery({ entries }: { entries: GalleryEntry[] }) {
-  const [query, setQuery] = useState("");
-  const [verdict, setVerdict] = useState<Verdict>("all");
-  const [party, setParty] = useState<Party | "all">("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useHashId();
+  const lastOpenedId = useRef<string | null>(null);
+
+  const query = searchParams.get("q") ?? "";
+  const verdict = (searchParams.get("verdict") ?? "all") as Verdict;
+  const party = (searchParams.get("party") ?? "all") as Party | "all";
+
+  function updateParams(next: { q?: string; verdict?: string; party?: string }) {
+    const params = new URLSearchParams();
+    const q = next.q ?? query;
+    const v = next.verdict ?? verdict;
+    const p = next.party ?? party;
+    if (q) params.set("q", q);
+    if (v !== "all") params.set("verdict", v);
+    if (p !== "all") params.set("party", p);
+    const qs = params.toString();
+    const hash = window.location.hash;
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}${hash}`, { scroll: false });
+  }
 
   const select = (id: string | null) => {
-    setSelectedId(id);
-    window.scrollTo({ top: 0 });
+    if (id) {
+      lastOpenedId.current = id;
+      setSelectedId(id);
+      window.scrollTo({ top: 0 });
+    } else {
+      setSelectedId(null);
+      const last = lastOpenedId.current;
+      if (last) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            document.getElementById(`case-${last}`)?.scrollIntoView({ block: "center" }),
+          ),
+        );
+      }
+    }
   };
 
   const docs = useMemo(() => entries.map(galleryDoc), [entries]);
@@ -62,11 +96,54 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
     [docs, byId, query, verdict, party],
   );
 
+  // counts filtered only by the query, for the segment labels
+  const byQuery = useMemo(
+    () => rankSearch(docs, query).flatMap((h) => byId.get(h.id) ?? []),
+    [docs, byId, query],
+  );
+  const countMatch = byQuery.filter((e) => e.result.matchesActual).length;
+  const countDiffer = byQuery.length - countMatch;
+  const partyCount = (p: Party) =>
+    byQuery.filter((e) => e.result.ruling.prevailingParty === p).length;
+
+  const notable = useMemo(
+    () =>
+      !query && verdict === "all" && party === "all"
+        ? entries
+            .filter((e) => !e.result.matchesActual)
+            .sort((a, b) => b.result.ruling.confidence - a.result.ruling.confidence)
+            .slice(0, 4)
+        : [],
+    [entries, query, verdict, party],
+  );
+
+  const closest = useMemo(() => {
+    const first = query.split(/\s+/)[0];
+    return first ? rankSearch(docs, first, 3).flatMap((h) => byId.get(h.id) ?? []) : [];
+  }, [docs, byId, query]);
+
   const total = entries.length;
   const correct = entries.filter((e) => e.result.matchesActual).length;
   const selected = selectedId ? entries.find((e) => e.case.id === selectedId) : undefined;
+  const selectedIndex = selected ? filtered.findIndex((e) => e.case.id === selected.case.id) : -1;
 
-  if (selected) return <Detail entry={selected} onBack={() => select(null)} />;
+  if (selected) {
+    return (
+      <Detail
+        entry={selected}
+        onBack={() => select(null)}
+        prev={selectedIndex > 0 ? filtered[selectedIndex - 1] : undefined}
+        next={
+          selectedIndex >= 0 && selectedIndex < filtered.length - 1
+            ? filtered[selectedIndex + 1]
+            : undefined
+        }
+        index={selectedIndex}
+        count={filtered.length}
+        onSelect={select}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -90,43 +167,89 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search cases: Miranda, negligence, 1973, Commerce Clause, free speech…  (⌘K anywhere)"
+          onChange={(e) => updateParams({ q: e.target.value })}
+          placeholder={`Search ${total} cases…`}
           className="min-w-64 flex-1 rounded-md border border-oak-900/40 px-3 py-2 text-sm text-ink shadow-inner focus:border-brass focus:outline-none"
-          autoFocus
         />
         <Segmented
           value={verdict}
-          onChange={setVerdict}
+          onChange={(v) => updateParams({ verdict: v })}
+          ariaLabel="Filter by verdict"
           options={[
-            ["all", "All"],
-            ["match", "Jev agreed"],
-            ["differ", "Jev differed"],
+            ["all", "All", byQuery.length],
+            ["match", "Jev agreed", countMatch],
+            ["differ", "Jev differed", countDiffer],
           ]}
         />
         <Segmented
           value={party}
-          onChange={setParty}
+          onChange={(p) => updateParams({ party: p })}
+          ariaLabel="Filter by prevailing party"
           options={[
-            ["all", "Any winner"],
-            ["plaintiff", "Plaintiff"],
-            ["defendant", "Defendant"],
-            ["mixed", "Mixed"],
+            ["all", "Any winner", byQuery.length],
+            ["plaintiff", "Plaintiff", partyCount("plaintiff")],
+            ["defendant", "Defendant", partyCount("defendant")],
+            ["mixed", "Mixed", partyCount("mixed")],
           ]}
         />
       </div>
 
       <p className="text-xs text-ink-soft">
         {filtered.length === total ? `${total} cases` : `${filtered.length} of ${total} cases`}
-        {query.trim() && " · ranked by relevance"}
+        {" · try a party, year or topic — typos are fine · ⌘K anywhere"}
       </p>
 
+      {notable.length > 0 && (
+        <div className="paper rounded-md p-4">
+          <h2 className="font-serif text-sm font-medium text-ink">Notable disagreements</h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {notable.map((e) => (
+              <button
+                key={e.case.id}
+                type="button"
+                onClick={() => select(e.case.id)}
+                className="rounded-md border border-oak-300 px-3 py-1.5 text-sm text-ink hover:border-brass"
+              >
+                {e.case.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
-        <p className="paper rounded-md p-10 text-center text-sm text-ink-soft">No cases match “{query}”.</p>
+        <div className="paper rounded-md p-10 text-center">
+          <p className="text-sm text-ink">No cases match “{query}”.</p>
+          <p className="mt-1 text-sm text-ink-soft">Try a party, year or topic.</p>
+          <button
+            type="button"
+            onClick={() => updateParams({ q: "" })}
+            className="brass mt-4 rounded-md px-4 py-1.5 text-sm"
+          >
+            Clear search
+          </button>
+          {closest.length > 0 && (
+            <div className="mt-5">
+              <h3 className="font-serif text-sm font-medium text-ink">Closest matches</h3>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                {closest.map((e) => (
+                  <button
+                    key={e.case.id}
+                    type="button"
+                    onClick={() => select(e.case.id)}
+                    className="rounded-md border border-oak-300 px-3 py-1.5 text-sm text-ink hover:border-brass"
+                  >
+                    {e.case.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((e) => (
-            <li key={e.case.id}>
+            <li key={e.case.id} id={`case-${e.case.id}`}>
               <button
                 type="button"
                 onClick={() => select(e.case.id)}
@@ -143,28 +266,20 @@ export function Gallery({ entries }: { entries: GalleryEntry[] }) {
                         : "bg-verdict-red/10 text-verdict-red"
                     }`}
                   >
-                    {e.result.matchesActual ? "agrees" : "differs"}
+                    {e.result.matchesActual
+                      ? `agrees · ${label(e.result.ruling.prevailingParty)}`
+                      : `differs · court ${label(e.case.actualPrevailingParty ?? "other")}, Jev ${label(e.result.ruling.prevailingParty)}`}
                   </span>
                 </div>
                 <p className="text-xs text-ink-soft">
-                  <Highlighted text={`${e.case.court} · ${e.case.year} · ${e.case.topic}`} query={query} />
+                  <Highlighted
+                    text={`${e.case.court} · ${e.case.year} · ${e.case.topic} · Jev ${Math.round(e.result.ruling.confidence * 100)}%`}
+                    query={query}
+                  />
                 </p>
                 <p className="line-clamp-3 text-sm text-ink">
                   <Highlighted text={e.case.tldr} query={query} />
                 </p>
-                <div className="mt-auto flex items-center justify-between pt-1 text-xs">
-                  <span className="flex flex-wrap items-center gap-1">
-                    Court:{" "}
-                    <span className={`rounded-md px-1.5 py-0.5 font-medium ${partyColor[e.case.actualPrevailingParty ?? "other"]}`}>
-                      {e.case.actualPrevailingParty ?? "other"}
-                    </span>
-                    {" · "}Jev:{" "}
-                    <span className={`rounded-md px-1.5 py-0.5 font-medium ${partyColor[e.result.ruling.prevailingParty]}`}>
-                      {e.result.ruling.prevailingParty}
-                    </span>
-                  </span>
-                  <span className="tabular-nums text-ink-soft">{Math.round(e.result.ruling.confidence * 100)}%</span>
-                </div>
               </button>
             </li>
           ))}
@@ -195,42 +310,109 @@ function Segmented<T extends string>({
   value,
   onChange,
   options,
+  ariaLabel,
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: [T, string][];
+  options: [T, string, number?][];
+  ariaLabel: string;
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-md border border-oak-900/40 bg-paper text-xs">
-      {options.map(([v, label]) => (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className="inline-flex overflow-hidden rounded-md border border-oak-900/40 bg-paper text-xs"
+    >
+      {options.map(([v, text, count]) => (
         <button
           key={v}
           type="button"
+          aria-pressed={v === value}
           onClick={() => onChange(v)}
           className={`px-3 py-2 ${v === value ? "brass font-medium" : "text-ink hover:bg-wall-dark"}`}
         >
-          {label}
+          {text}
+          {count !== undefined && (
+            <span
+              className={`ml-1 tabular-nums ${v === value ? "text-oak-900/70" : "text-ink-soft"}`}
+            >
+              {count}
+            </span>
+          )}
         </button>
       ))}
     </div>
   );
 }
 
-function Detail({ entry, onBack }: { entry: GalleryEntry; onBack: () => void }) {
+function Detail({
+  entry,
+  onBack,
+  prev,
+  next,
+  index,
+  count,
+  onSelect,
+}: {
+  entry: GalleryEntry;
+  onBack: () => void;
+  prev?: GalleryEntry;
+  next?: GalleryEntry;
+  index: number;
+  count: number;
+  onSelect: (id: string | null) => void;
+}) {
   const c = entry.case;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement;
+      if (t.tagName === "INPUT" || t.tagName === "TEXTAREA") return;
+      if (e.key === "ArrowLeft" && prev) onSelect(prev.case.id);
+      else if (e.key === "ArrowRight" && next) onSelect(next.case.id);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [prev, next, onSelect]);
+
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onBack} className="text-sm text-ink-soft hover:text-ink">
-        ← All cases
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button type="button" onClick={onBack} className="text-sm text-ink-soft hover:text-ink">
+          ← All cases
+        </button>
+        <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            disabled={!prev}
+            onClick={() => prev && onSelect(prev.case.id)}
+            className="text-ink-soft hover:text-ink disabled:opacity-40"
+          >
+            ← Previous case
+          </button>
+          {index >= 0 && (
+            <span className="tabular-nums text-xs text-ink-soft">
+              {index + 1} of {count}
+            </span>
+          )}
+          <button
+            type="button"
+            disabled={!next}
+            onClick={() => next && onSelect(next.case.id)}
+            className="text-ink-soft hover:text-ink disabled:opacity-40"
+          >
+            Next case →
+          </button>
+        </div>
+      </div>
       <div className="flex items-start gap-5">
         <Seal size={64} />
         <div>
-        <h1 className="font-serif text-3xl text-ink">{c.title}</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          {c.court} · {c.year} · {c.topic}
-          {c.jurisdiction && ` · ${c.jurisdiction}`}
-        </p>
+          <h1 className="font-serif text-3xl text-ink">{c.title}</h1>
+          <p className="mt-1 text-sm text-ink-soft">
+            {c.court} · {c.year} · {c.topic}
+            {c.jurisdiction && ` · ${c.jurisdiction}`}
+          </p>
         </div>
       </div>
 
@@ -248,12 +430,14 @@ function Detail({ entry, onBack }: { entry: GalleryEntry; onBack: () => void }) 
         <div>
           <h2 className="mb-2 font-serif text-base text-ink">The record before the court</h2>
           <div className="paper space-y-4 rounded-md p-5 text-sm">
-            {RECORD_FIELDS.map(({ key, label }) => {
+            {RECORD_FIELDS.map(({ key, label: fieldLabel }) => {
               const v = c[key];
               if (typeof v !== "string" || !v) return null;
               return (
                 <div key={key}>
-                  <h3 className="paper-rule pb-1 font-serif text-sm font-medium text-ink">{label}</h3>
+                  <h3 className="paper-rule pb-1 font-serif text-sm font-medium text-ink">
+                    {fieldLabel}
+                  </h3>
                   <p className="mt-1 whitespace-pre-line text-ink">{v}</p>
                 </div>
               );
@@ -272,6 +456,7 @@ function Verdicts({ entry }: { entry: GalleryEntry }) {
   const jevParty = r.ruling.prevailingParty;
   const sameParty = courtParty === jevParty;
   const agree = r.matchesActual;
+  const why = agree ? null : whyTheyDiffer(r, courtParty);
   return (
     <div className="paper rounded-md p-5">
       <p className={`font-serif text-lg ${agree ? "text-verdict-green" : "text-verdict-red"}`}>
@@ -284,8 +469,8 @@ function Verdicts({ entry }: { entry: GalleryEntry }) {
         <div className="rounded-md border border-oak-900/15 p-4">
           <h3 className="font-serif text-sm font-medium text-ink">What the court ruled</h3>
           <p className="mt-2">
-            <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${partyColor[courtParty]}`}>
-              {courtParty}
+            <span className="rounded-md bg-ink/10 px-1.5 py-0.5 text-xs font-medium text-ink">
+              {label(courtParty)}
             </span>
           </p>
           <p className="mt-2 text-sm text-ink">{c.actualOutcome}</p>
@@ -293,18 +478,25 @@ function Verdicts({ entry }: { entry: GalleryEntry }) {
         <div className="rounded-md border border-oak-900/15 p-4">
           <h3 className="font-serif text-sm font-medium text-ink">What Jev ruled</h3>
           <p className="mt-2">
-            <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${partyColor[jevParty]}`}>
-              {jevParty}
+            <span className="rounded-md bg-ink/10 px-1.5 py-0.5 text-xs font-medium text-ink">
+              {label(jevParty)}
             </span>
           </p>
           <p className="mt-2 text-sm text-ink">{r.ruling.ruling}</p>
         </div>
       </div>
+      {why && (
+        <div className="mt-4 rounded-md bg-wall-dark/60 p-3">
+          <h3 className="font-serif text-sm font-medium text-ink">Why they differ</h3>
+          <p className="mt-1 text-sm text-ink">{why}</p>
+        </div>
+      )}
       <p className="mt-4 text-sm text-ink-soft">
         {sameParty
-          ? `Both name the ${jevParty} as the prevailing party.`
-          : `The court ruled for the ${courtParty}; Jev ruled for the ${jevParty}.`}
-        {r.matchProbability !== undefined && ` Jev put the odds of matching the real outcome at ${Math.round(r.matchProbability * 100)}%.`}
+          ? `Both name the ${label(jevParty).toLowerCase()} as the prevailing party.`
+          : `The court ruled for the ${label(courtParty).toLowerCase()}; Jev ruled for the ${label(jevParty).toLowerCase()}.`}
+        {r.matchProbability !== undefined &&
+          ` Jev put the odds of matching the real outcome at ${Math.round(r.matchProbability * 100)}%.`}
       </p>
     </div>
   );
