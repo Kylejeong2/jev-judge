@@ -320,7 +320,7 @@ function Segmented<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex overflow-hidden rounded-md border border-oak-900/40 bg-paper text-xs"
+      className="inline-flex max-w-full flex-wrap overflow-hidden rounded-md border border-oak-900/40 bg-paper text-xs"
     >
       {options.map(([v, text, count]) => (
         <button
@@ -328,7 +328,7 @@ function Segmented<T extends string>({
           type="button"
           aria-pressed={v === value}
           onClick={() => onChange(v)}
-          className={`px-3 py-2 ${v === value ? "brass font-medium" : "text-ink hover:bg-wall-dark"}`}
+          className={`whitespace-nowrap px-3 py-2 ${v === value ? "brass font-medium" : "text-ink hover:bg-wall-dark"}`}
         >
           {text}
           {count !== undefined && (
