@@ -1,7 +1,7 @@
 import { judgeCase, runWithConcurrency } from "@/lib/judge";
 import type { BatchEvent, CaseInput } from "@/lib/types";
 
-export const maxDuration = 3600;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { cases: CaseInput[]; concurrency?: number };
